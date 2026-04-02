@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { useForm, formOptions } from "@tanstack/react-form";
 import { Button, Card, CardContent, CardHeader, CardTitle, Input } from "@neurology/ui";
 import { Field } from "~/components/Field";
 import { RadioCard } from "~/components/RadioCard";
+import * as z from "zod";
 
 const clinicLocations = [
   "Anaheim",
@@ -11,14 +13,71 @@ const clinicLocations = [
   "El Monte",
   "Long Beach",
   "Los Angeles",
-];
+] as const;
+
+const appointmentTypes = ["In-Person", "Telemedicine"] as const;
 
 export const Route = createFileRoute("/")({
   component: Home,
 });
 
+interface Referal {
+  firstName: string
+  lastName: string
+  dateOfBirth: string
+  phoneNumber: string
+  email: string
+  referringFirm: string
+  attorneyName: string
+  attorneyEmail: string
+  attorneyPhone: string
+  complaint: string
+  clinicLocation: typeof clinicLocations
+  appointmentType: typeof appointmentTypes
+}
+
+const defaultReferal: Referral = {
+  firstName: "",
+  lastName: "",
+  dateOfBirth: "",
+  phoneNumber: "",
+  email: "",
+  referringFirm: "",
+  attorneyName: "",
+  attorneyEmail: "",
+  attorneyPhone: "",
+  complaint: "",
+  clinicLocation: clinicLocations[0], 
+  appointmentType: appointmentTypes[0] 
+}
+
+const formSchema = z.object({
+  firstName: z.string(),
+  lastName: z.string(),
+  DataOfBirth:z.iso.date(),
+  PhoneNumber: z.e164(),
+  Email: z.email(),
+  ReferringFirm: z.string(),
+  AttorneyFirm: z.string(),
+  AttorneyEmail: z.email(),
+  Complaint: z.string(),
+  ClinicLocation: z.literal([...clinicLocations]),
+  AppointmentType: z.literal([...appointmentTypes])
+})
+
+const formOpts = formOptions({
+  defaultValues: defaultReferal
+});
+
 function Home() {
   const [complaint, setComplaint] = useState("");
+  const form = useForm({
+    ...formOpts,
+    onSubmit: async ({ value }) => {
+      console.log(value);
+    }
+  });
+
   const [appointmentType, setAppointmentType] = useState<"in-person" | "telemedicine">(
     "in-person",
   );
