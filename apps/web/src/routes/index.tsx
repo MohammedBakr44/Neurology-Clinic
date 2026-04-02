@@ -1,10 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
 import { useForm, formOptions } from "@tanstack/react-form";
 import { Button, Card, CardContent, CardHeader, CardTitle, Input } from "@neurology/ui";
+import * as z from "zod";
 import { Field } from "~/components/Field";
 import { RadioCard } from "~/components/RadioCard";
-import * as z from "zod";
 
 const clinicLocations = [
   "Anaheim",
@@ -16,27 +15,28 @@ const clinicLocations = [
 ] as const;
 
 const appointmentTypes = ["In-Person", "Telemedicine"] as const;
+// US phone format (323) 555-0147 or 323 555 0147 or 3235550147 zod v4 has a built in support for that but it didn't work for some reason, other libraries might be used but I will stick with zod for simplicity.
+const phoneRegex = /^\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}$/;
+const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
 
-export const Route = createFileRoute("/")({
-  component: Home,
+const referralSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  dateOfBirth: z.string().regex(dateRegex, "Use YYYY-MM-DD"),
+  phoneNumber: z.string().regex(phoneRegex, "Use a valid phone number"),
+  email: z.string().email("Use a valid email").optional().or(z.literal("")),
+  referringFirm: z.string().min(1, "Law firm is required"),
+  attorneyName: z.string().min(1, "Attorney or case manager name is required"),
+  attorneyEmail: z.string().email("Use a valid email"),
+  attorneyPhone: z.string().regex(phoneRegex, "Use a valid phone number"),
+  complaint: z.string().max(500, "Keep the complaint under 500 characters"),
+  clinicLocation: z.enum(clinicLocations),
+  appointmentType: z.enum(appointmentTypes),
 });
 
-interface Referal {
-  firstName: string
-  lastName: string
-  dateOfBirth: string
-  phoneNumber: string
-  email: string
-  referringFirm: string
-  attorneyName: string
-  attorneyEmail: string
-  attorneyPhone: string
-  complaint: string
-  clinicLocation: typeof clinicLocations
-  appointmentType: typeof appointmentTypes
-}
+type ReferralValues = z.infer<typeof referralSchema>;
 
-const defaultReferal: Referral = {
+const defaultValues: ReferralValues = {
   firstName: "",
   lastName: "",
   dateOfBirth: "",
@@ -47,40 +47,38 @@ const defaultReferal: Referral = {
   attorneyEmail: "",
   attorneyPhone: "",
   complaint: "",
-  clinicLocation: clinicLocations[0], 
-  appointmentType: appointmentTypes[0] 
+  clinicLocation: clinicLocations[0],
+  appointmentType: appointmentTypes[0],
+};
+
+function getErrorMessage(error: unknown) {
+  if (typeof error === "string") return error;
+  if (error && typeof error === "object" && "message" in error) {
+    const { message } = error as { message?: unknown };
+    if (typeof message === "string") return message;
+  }
+
+  return null;
 }
 
-const formSchema = z.object({
-  firstName: z.string(),
-  lastName: z.string(),
-  DataOfBirth:z.iso.date(),
-  PhoneNumber: z.e164(),
-  Email: z.email(),
-  ReferringFirm: z.string(),
-  AttorneyFirm: z.string(),
-  AttorneyEmail: z.email(),
-  Complaint: z.string(),
-  ClinicLocation: z.literal([...clinicLocations]),
-  AppointmentType: z.literal([...appointmentTypes])
-})
+export const Route = createFileRoute("/")({
+  component: Home,
+});
 
 const formOpts = formOptions({
-  defaultValues: defaultReferal
+  defaultValues,
+  validators: {
+    onSubmit: referralSchema
+  }
 });
 
 function Home() {
-  const [complaint, setComplaint] = useState("");
   const form = useForm({
     ...formOpts,
     onSubmit: async ({ value }) => {
       console.log(value);
-    }
+    },
   });
-
-  const [appointmentType, setAppointmentType] = useState<"in-person" | "telemedicine">(
-    "in-person",
-  );
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -102,104 +100,259 @@ function Home() {
             <CardTitle className="text-lg">Patient and attorney details</CardTitle>
           </CardHeader>
           <CardContent className="p-6">
-            <form className="space-y-8" onSubmit={(event) => event.preventDefault()}>
+            <form
+              className="space-y-8"
+              onSubmit={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                void form.handleSubmit();
+              }}
+            >
               <section className="grid gap-4 md:grid-cols-2">
-                <Field label="Patient first name" required>
-                  <Input
-                    name="patientFirstName"
-                    autoComplete="given-name"
-                    placeholder="Marisol"
-                    required
-                  />
-                </Field>
-                <Field label="Patient last name" required>
-                  <Input
-                    name="patientLastName"
-                    autoComplete="family-name"
-                    placeholder="Gutierrez"
-                    required
-                  />
-                </Field>
-                <Field label="Date of birth" required>
-                  <Input name="dateOfBirth" type="date" required />
-                </Field>
-                <Field label="Phone number" required>
-                  <Input
-                    name="phoneNumber"
-                    type="tel"
-                    autoComplete="tel"
-                    placeholder="(323) 555-0147"
-                    required
-                  />
-                </Field>
-                <Field label="Email address">
-                  <Input
-                    name="emailAddress"
-                    type="email"
-                    autoComplete="email"
-                    placeholder="marisol.gutierrez@example.com"
-                  />
-                </Field>
-                <Field label="Referring law firm name" required>
-                  <Input name="referringLawFirm" placeholder="Hernandez & Park LLP" required />
-                </Field>
-                <Field label="Attorney or case manager name" required>
-                  <Input name="attorneyName" placeholder="Daniel Park, Case Manager" required />
-                </Field>
-                <Field label="Attorney email" required>
-                  <Input
-                    name="attorneyEmail"
-                    type="email"
-                    autoComplete="email"
-                    placeholder="dpark@hernandezpark.com"
-                    required
-                  />
-                </Field>
-                <Field label="Attorney phone" required>
-                  <Input
-                    name="attorneyPhone"
-                    type="tel"
-                    autoComplete="tel"
-                    placeholder="(213) 555-0182"
-                    required
-                  />
-                </Field>
-                <Field label="Preferred clinic location" required className="md:col-span-2">
-                  <select
-                    name="preferredClinicLocation"
-                    required
-                    className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm outline-none transition-colors focus:border-foreground"
-                    defaultValue=""
-                  >
-                    <option value="" disabled>
-                      Select a location
-                    </option>
-                    {clinicLocations.map((location) => (
-                      <option key={location} value={location}>
-                        {location}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
+                <form.Field
+                  name="firstName"
+                  children={(field) => (
+                    <Field label="Patient first name" required>
+                      <Input
+                        name={field.name}
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(event) => field.handleChange(event.target.value)}
+                        autoComplete="given-name"
+                        placeholder="Taki"
+                      />
+                      {getErrorMessage(field.state.meta.errors[0]) ? (
+                        <p className="text-xs text-red-600">
+                          {getErrorMessage(field.state.meta.errors[0])}
+                        </p>
+                      ) : null}
+                    </Field>
+                  )}
+                />
+
+                <form.Field
+                  name="lastName"
+                  children={(field) => (
+                    <Field label="Patient last name" required>
+                      <Input
+                        name={field.name}
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(event) => field.handleChange(event.target.value)}
+                        autoComplete="family-name"
+                        placeholder="Tachibana"
+                      />
+                      {getErrorMessage(field.state.meta.errors[0]) ? (
+                        <p className="text-xs text-red-600">
+                          {getErrorMessage(field.state.meta.errors[0])}
+                        </p>
+                      ) : null}
+                    </Field>
+                  )}
+                />
+
+                <form.Field
+                  name="dateOfBirth"
+                  children={(field) => (
+                    <Field label="Date of birth" required>
+                      <Input
+                        name={field.name}
+                        type="date"
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(event) => field.handleChange(event.target.value)}
+                      />
+                      {getErrorMessage(field.state.meta.errors[0]) ? (
+                        <p className="text-xs text-red-600">
+                          {getErrorMessage(field.state.meta.errors[0])}
+                        </p>
+                      ) : null}
+                    </Field>
+                  )}
+                />
+
+                <form.Field
+                  name="phoneNumber"
+                  children={(field) => (
+                    <Field label="Phone number" required>
+                      <Input
+                        name={field.name}
+                        type="tel"
+                        autoComplete="tel"
+                        placeholder="(323) 555-0147"
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(event) => field.handleChange(event.target.value)}
+                      />
+                      {getErrorMessage(field.state.meta.errors[0]) ? (
+                        <p className="text-xs text-red-600">
+                          {getErrorMessage(field.state.meta.errors[0])}
+                        </p>
+                      ) : null}
+                    </Field>
+                  )}
+                />
+
+                <form.Field
+                  name="email"
+                  children={(field) => (
+                    <Field label="Email address">
+                      <Input
+                        name={field.name}
+                        type="email"
+                        autoComplete="email"
+                        placeholder="bantaki@itomori.com"
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(event) => field.handleChange(event.target.value)}
+                      />
+                      {getErrorMessage(field.state.meta.errors[0]) ? (
+                        <p className="text-xs text-red-600">
+                          {getErrorMessage(field.state.meta.errors[0])}
+                        </p>
+                      ) : null}
+                    </Field>
+                  )}
+                />
+
+                <form.Field
+                  name="referringFirm"
+                  children={(field) => (
+                    <Field label="Referring law firm name" required>
+                      <Input
+                        name={field.name}
+                        placeholder="Saul Goodman & Associates"
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(event) => field.handleChange(event.target.value)}
+                      />
+                      {getErrorMessage(field.state.meta.errors[0]) ? (
+                        <p className="text-xs text-red-600">
+                          {getErrorMessage(field.state.meta.errors[0])}
+                        </p>
+                      ) : null}
+                    </Field>
+                  )}
+                />
+
+                <form.Field
+                  name="attorneyName"
+                  children={(field) => (
+                    <Field label="Attorney Name" required>
+                      <Input
+                        name={field.name}
+                        placeholder="Saul Goodman"
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(event) => field.handleChange(event.target.value)}
+                      />
+                      {getErrorMessage(field.state.meta.errors[0]) ? (
+                        <p className="text-xs text-red-600">
+                          {getErrorMessage(field.state.meta.errors[0])}
+                        </p>
+                      ) : null}
+                    </Field>
+                  )}
+                />
+
+                <form.Field
+                  name="attorneyEmail"
+                  children={(field) => (
+                    <Field label="Attorney email" required>
+                      <Input
+                        name={field.name}
+                        type="email"
+                        autoComplete="email"
+                        placeholder="ceo@saulandassociates.com"
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(event) => field.handleChange(event.target.value)}
+                      />
+                      {getErrorMessage(field.state.meta.errors[0]) ? (
+                        <p className="text-xs text-red-600">
+                          {getErrorMessage(field.state.meta.errors[0])}
+                        </p>
+                      ) : null}
+                    </Field>
+                  )}
+                />
+
+                <form.Field
+                  name="attorneyPhone"
+                  children={(field) => (
+                    <Field label="Attorney phone" required>
+                      <Input
+                        name={field.name}
+                        type="tel"
+                        autoComplete="tel"
+                        placeholder="(213) 555-0182"
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(event) => field.handleChange(event.target.value)}
+                      />
+                      {getErrorMessage(field.state.meta.errors[0]) ? (
+                        <p className="text-xs text-red-600">
+                          {getErrorMessage(field.state.meta.errors[0])}
+                        </p>
+                      ) : null}
+                    </Field>
+                  )}
+                />
+
+                <form.Field
+                  name="clinicLocation"
+                  children={(field) => (
+                    <Field label="Preferred clinic location" required className="md:col-span-2">
+                      <select
+                        name={field.name}
+                        required
+                        className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm outline-none transition-colors focus:border-foreground"
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(event) => field.handleChange(event.target.value)}
+                      >
+                        {clinicLocations.map((location) => (
+                          <option key={location} value={location}>
+                            {location}
+                          </option>
+                        ))}
+                      </select>
+                      {getErrorMessage(field.state.meta.errors[0]) ? (
+                        <p className="text-xs text-red-600">
+                          {getErrorMessage(field.state.meta.errors[0])}
+                        </p>
+                      ) : null}
+                    </Field>
+                  )}
+                />
               </section>
 
               <section className="space-y-4">
-                <Field
-                  label="Primary complaint / reason for referral"
-                  hint={`${complaint.length}/500 characters`}
-                  required
-                >
-                  <textarea
-                    name="primaryComplaint"
-                    maxLength={500}
-                    value={complaint}
-                    onChange={(event) => setComplaint(event.target.value)}
-                    required
-                    rows={6}
-                    className="min-h-[9rem] w-full rounded-md border border-border bg-background px-3 py-2 text-sm leading-6 outline-none transition-colors placeholder:text-muted-foreground focus:border-foreground"
-                    placeholder="Persistent lower back pain after a rear-end collision, with numbness in the left leg."
-                  />
-                </Field>
+                <form.Field
+                  name="complaint"
+                  children={(field) => (
+                    <Field
+                      label="Primary complaint / reason for referral"
+                      hint={`${field.state.value.length}/500 characters`}
+                      required
+                    >
+                      <textarea
+                        name={field.name}
+                        maxLength={500}
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(event) => field.handleChange(event.target.value)}
+                        required
+                        rows={6}
+                        className="min-h-[9rem] w-full rounded-md border border-border bg-background px-3 py-2 text-sm leading-6 outline-none transition-colors placeholder:text-muted-foreground focus:border-foreground"
+                        placeholder="Persistent lower back pain after a rear-end collision, with numbness in the left leg."
+                      />
+                      {field.state.meta.errors[0] ? (
+                        <p className="text-xs text-red-600">{field.state.meta.errors[0]}</p>
+                      ) : null}
+                    </Field>
+                  )}
+                />
               </section>
 
               <section className="space-y-3">
@@ -209,29 +362,32 @@ function Home() {
                     Choose one option for the initial visit.
                   </p>
                 </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <RadioCard
-                    label="In-Person"
-                    description="Visit the clinic location you selected."
-                    checked={appointmentType === "in-person"}
-                    onChange={() => setAppointmentType("in-person")}
-                  />
-                  <RadioCard
-                    label="Telemedicine"
-                    description="Remote visit by video or phone."
-                    checked={appointmentType === "telemedicine"}
-                    onChange={() => setAppointmentType("telemedicine")}
-                  />
-                </div>
+                <form.Field
+                  name="appointmentType"
+                  children={(field) => (
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <RadioCard
+                        label="In-Person"
+                        description="Visit the clinic location you selected."
+                        checked={field.state.value === "In-Person"}
+                        onChange={() => field.handleChange("In-Person")}
+                      />
+                      <RadioCard
+                        label="Telemedicine"
+                        description="Remote visit by video or phone."
+                        checked={field.state.value === "Telemedicine"}
+                        onChange={() => field.handleChange("Telemedicine")}
+                      />
+                    </div>
+                  )}
+                />
               </section>
 
               <div className="flex flex-col gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-muted-foreground">
                   Fields marked required must be completed before submission.
                 </p>
-                <Button type="submit">
-                  Save referral
-                </Button>
+                <Button type="submit">Save referral</Button>
               </div>
             </form>
           </CardContent>

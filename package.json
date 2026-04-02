@@ -12,6 +12,7 @@
     "typescript": "^5.8.0"
   },
   "dependencies": {
-    "@tanstack/react-form": "^1.28.6"
+    "@tanstack/react-form": "^1.28.6",
+    "zod": "^4.3.6"
   }
 }
