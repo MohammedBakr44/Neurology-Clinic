@@ -15,3 +15,5 @@ drizzle/
 .idea
 .vscode
 .agents
+
+apps/web/.tanstack
