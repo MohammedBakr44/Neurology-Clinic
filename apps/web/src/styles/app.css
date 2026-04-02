@@ -10,7 +10,7 @@ body {
 
 /*temporary solution*/
 
-button {
+button[type="submit"] {
   background-color: var(--primary);
   color: var(--popover);
 
