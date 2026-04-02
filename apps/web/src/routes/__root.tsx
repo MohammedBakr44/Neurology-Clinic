@@ -10,6 +10,7 @@ import {
 import type { QueryClient } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
+import { Toaster } from "@neurology/ui";
 import { seo } from "~/utils/seo";
 import appCss from "~/styles/app.css?url";
 
@@ -44,6 +45,7 @@ function RootDocument({ children }: { children: ReactNode }) {
       </head>
       <body> 
         {children}
+        <Toaster />
         <TanStackRouterDevtools position="bottom-right" />
         <ReactQueryDevtools buttonPosition="bottom-left" />
         <Scripts />
@@ -51,4 +53,3 @@ function RootDocument({ children }: { children: ReactNode }) {
     </html>
   );
 }
-

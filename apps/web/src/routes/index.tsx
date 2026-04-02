@@ -1,55 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm, formOptions } from "@tanstack/react-form";
 import { Button, Card, CardContent, CardHeader, CardTitle, Input } from "@neurology/ui";
-import * as z from "zod";
+import { toast } from "sonner";
+import {
+  appointmentTypes,
+  clinicLocations,
+  defaultReferralValues,
+  referralSchema,
+} from "@neurology/types";
 import { Field } from "~/components/Field";
 import { RadioCard } from "~/components/RadioCard";
-
-const clinicLocations = [
-  "Anaheim",
-  "Culver City",
-  "Downey",
-  "El Monte",
-  "Long Beach",
-  "Los Angeles",
-] as const;
-
-const appointmentTypes = ["In-Person", "Telemedicine"] as const;
-// US phone format (323) 555-0147 or 323 555 0147 or 3235550147 zod v4 has a built in support for that but it didn't work for some reason, other libraries might be used but I will stick with zod for simplicity.
-const phoneRegex = /^\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}$/;
-const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-
-const referralSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  dateOfBirth: z.string().regex(dateRegex, "Use YYYY-MM-DD"),
-  phoneNumber: z.string().regex(phoneRegex, "Use a valid phone number"),
-  email: z.string().email("Use a valid email").optional().or(z.literal("")),
-  referringFirm: z.string().min(1, "Law firm is required"),
-  attorneyName: z.string().min(1, "Attorney or case manager name is required"),
-  attorneyEmail: z.string().email("Use a valid email"),
-  attorneyPhone: z.string().regex(phoneRegex, "Use a valid phone number"),
-  complaint: z.string().max(500, "Keep the complaint under 500 characters"),
-  clinicLocation: z.enum(clinicLocations),
-  appointmentType: z.enum(appointmentTypes),
-});
-
-type ReferralValues = z.infer<typeof referralSchema>;
-
-const defaultValues: ReferralValues = {
-  firstName: "",
-  lastName: "",
-  dateOfBirth: "",
-  phoneNumber: "",
-  email: "",
-  referringFirm: "",
-  attorneyName: "",
-  attorneyEmail: "",
-  attorneyPhone: "",
-  complaint: "",
-  clinicLocation: clinicLocations[0],
-  appointmentType: appointmentTypes[0],
-};
+import { trpc } from "~/utils/trpc";
 
 function getErrorMessage(error: unknown) {
   if (typeof error === "string") return error;
@@ -66,17 +28,28 @@ export const Route = createFileRoute("/")({
 });
 
 const formOpts = formOptions({
-  defaultValues,
+  defaultValues: defaultReferralValues,
   validators: {
-    onSubmit: referralSchema
+    onSubmit: referralSchema,
   }
 });
 
 function Home() {
+  const referrals = useQuery(trpc.referrals.list.queryOptions());
+  console.log(referrals.data);
+  const referralMutation = useMutation({
+    ...trpc.referrals.create.mutationOptions(),
+    onSuccess: () => {
+      toast.success("Referral saved");
+    },
+    onError: () => {
+      toast.error("Referral save failed");
+    },
+  });
   const form = useForm({
     ...formOpts,
     onSubmit: async ({ value }) => {
-      console.log(value);
+      referralMutation.mutate(value);
     },
   });
 
