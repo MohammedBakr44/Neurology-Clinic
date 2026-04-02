@@ -1,0 +1,20 @@
+@import "@neurology/ui/globals.css";
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+/*temporary solution*/
+
+button {
+  background-color: var(--primary);
+  color: var(--popover);
+
+  &:hover {
+    background-color: var(--ring);
+  }
+}

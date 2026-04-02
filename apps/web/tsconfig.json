@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.json",
+  "include": ["src/**/*"],
+  "compilerOptions": {
+    "noEmit": true,
+    "paths": {
+      "~/*": ["./src/*"],
+      "@neurology/db": ["../../packages/db/src"],
+      "@neurology/db/*": ["../../packages/db/src/*"],
+      "@neurology/ui": ["../../packages/ui/src"],
+      "@neurology/ui/*": ["../../packages/ui/src/*"]
+    }
+  }
+}
+
