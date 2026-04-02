@@ -82,7 +82,7 @@ function Home() {
             type="button"
             role="tab"
             aria-selected={activeTab === "form"}
-            className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+            className={`rounded-md px-4 py-2 text-sm font-medium transition-colors cursor-pointer ${
               activeTab === "form"
                 ? "bg-background text-foreground shadow-none"
                 : "bg-transparent text-muted-foreground"
@@ -95,7 +95,7 @@ function Home() {
             type="button"
             role="tab"
             aria-selected={activeTab === "referrals"}
-            className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+            className={`rounded-md px-4 py-2 text-sm font-medium transition-colors cursor-pointer ${
               activeTab === "referrals"
                 ? "bg-background text-foreground shadow-none"
                 : "bg-transparent text-muted-foreground"
@@ -414,12 +414,27 @@ function Home() {
                 <table className="w-full text-left text-sm">
                   <thead className="border-b border-border text-muted-foreground">
                     <tr>
-                      <th className="px-6 py-3 font-medium">Patient</th>
-                      <th className="px-6 py-3 font-medium">Contact</th>
-                      <th className="px-6 py-3 font-medium">Firm</th>
-                      <th className="px-6 py-3 font-medium">Clinic</th>
-                      <th className="px-6 py-3 font-medium">Appointment</th>
-                      <th className="px-6 py-3 font-medium">Created</th>
+                      <th className="px-6 py-3 font-medium" title="Patient name and date of birth">
+                        Patient
+                      </th>
+                      <th className="px-6 py-3 font-medium" title="Patient contact details">
+                        Contact
+                      </th>
+                      <th className="px-6 py-3 font-medium" title="The law firm that referred the patient">
+                        Referring firm
+                      </th>
+                      <th className="px-6 py-3 font-medium" title="The attorney or case manager responsible for the referral">
+                        Responsible attorney
+                      </th>
+                      <th className="px-6 py-3 font-medium" title="Selected clinic location">
+                        Clinic
+                      </th>
+                      <th className="px-6 py-3 font-medium" title="Initial appointment format">
+                        Appointment
+                      </th>
+                      <th className="px-6 py-3 font-medium" title="When this referral was created">
+                        Created
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -428,42 +443,55 @@ function Home() {
                         <tr key={referral.id} className="border-b border-border last:border-b-0">
                           <td className="px-6 py-4 align-top">
                             <div className="flex flex-col gap-1">
-                              <span className="font-medium">
+                              <span className="font-medium" title="Patient full name">
                                 {referral.firstName} {referral.lastName}
                               </span>
-                              <span className="text-xs text-muted-foreground">
+                              <span className="text-xs text-muted-foreground" title="Patient date of birth">
                                 DOB {formatDate(referral.dateOfBirth)}
                               </span>
                             </div>
                           </td>
                           <td className="px-6 py-4 align-top">
                             <div className="flex flex-col gap-1">
-                              <span>{referral.phoneNumber}</span>
+                              <span title="Patient phone number">{referral.phoneNumber}</span>
                               {referral.email ? (
-                                <span className="text-xs text-muted-foreground">
+                                <span className="text-xs text-muted-foreground" title="Patient email address">
                                   {referral.email}
                                 </span>
                               ) : null}
                             </div>
                           </td>
                           <td className="px-6 py-4 align-top">
+                            <span title="Referring law firm">{referral.referringFirm}</span>
+                          </td>
+                          <td className="px-6 py-4 align-top">
                             <div className="flex flex-col gap-1">
-                              <span>{referral.referringFirm}</span>
-                              <span className="text-xs text-muted-foreground">
+                              <span title="Responsible attorney or case manager">
                                 {referral.attorneyName}
                               </span>
+                              <a
+                                className="text-xs text-muted-foreground underline decoration-border underline-offset-2"
+                                href={`mailto:${referral.attorneyEmail}`}
+                                title="Email the responsible attorney"
+                              >
+                                {referral.attorneyEmail}
+                              </a>
                             </div>
                           </td>
-                          <td className="px-6 py-4 align-top">{referral.clinicLocation}</td>
-                          <td className="px-6 py-4 align-top">{referral.appointmentType}</td>
+                          <td className="px-6 py-4 align-top" title="Clinic location selected for the referral">
+                            {referral.clinicLocation}
+                          </td>
+                          <td className="px-6 py-4 align-top" title="Appointment type selected for the referral">
+                            {referral.appointmentType}
+                          </td>
                           <td className="px-6 py-4 align-top">
-                            {formatDate(referral.createdAt)}
+                            <span title="Referral creation date">{formatDate(referral.createdAt)}</span>
                           </td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td className="px-6 py-10 text-sm text-muted-foreground" colSpan={6}>
+                        <td className="px-6 py-10 text-sm text-muted-foreground" colSpan={7}>
                           No referrals saved yet.
                         </td>
                       </tr>
